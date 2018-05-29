@@ -3,6 +3,7 @@ import {h, Component} from 'preact';
 import Rect from './rect';
 import RectRender from './rect-render';
 import RectValues from './rect-values';
+import RectHierarchy from './rect-hierarchy';
 
 const noop = () => {};
 
@@ -32,6 +33,7 @@ class RectEditor extends Component {
   }
 
   selectRect(...path) {
+    console.log(path);
     this.setState({
       path,
     });
@@ -60,7 +62,6 @@ class RectEditor extends Component {
     while (parents.length) {
       parent = parents.pop().updateChild(path[parents.length], parent);
     }
-    console.log(path, top, parent, rect);
     this.setState({
       rect: parent,
     });
@@ -73,7 +74,7 @@ class RectEditor extends Component {
         <div style={{
           position: 'absolute',
           top: '0px',
-          right: '16%',
+          right: '33%',
           bottom: '0px',
           left: '0px',
         }}>
@@ -82,11 +83,20 @@ class RectEditor extends Component {
         <div style={{
           position: 'absolute',
           top: '0px',
+          right: '16%',
+          bottom: '0px',
+          left: '67%',
+        }}>
+          <RectValues rect={selectRect} update={this.updateSelect} />
+        </div>
+        <div style={{
+          position: 'absolute',
+          top: '0px',
           right: '0px',
           bottom: '0px',
           left: '84%',
         }}>
-          <RectValues rect={selectRect} update={this.updateSelect} />
+          <RectHierarchy rect={this.state.rect} selectRect={this.selectRect} />
         </div>
       </div>
     );

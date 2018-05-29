@@ -59,12 +59,23 @@ class RectValues extends Component {
   }
 
   updateValue(name, value) {
-    this.props.update(this.props.rect.assign({
-      [name]: value,
-    }));
+    console.log(name, value);
+    if (['type', 'x', 'y', 'width', 'height'].includes(name)) {
+      this.props.update(this.props.rect.assign({
+        [name]: value,
+      }));
+    }
+    else {
+      this.props.update(this.props.rect.assign({
+        values: Object.assign({}, this.props.rect.values, {
+          [name]: value,
+        }),
+      }));
+    }
   }
 
   render() {
+    console.log(this.props.rect);
     const {rect} = this.props;
     const {updateValue} = this;
     return (
@@ -74,6 +85,14 @@ class RectValues extends Component {
         <Value updateValue={updateValue} name={'y'} value={rect.y * 100} filter={n => Number(n) / 100} />
         <Value updateValue={updateValue} name={'width'} value={rect.width * 100} filter={n => Number(n) / 100} />
         <Value updateValue={updateValue} name={'height'} value={rect.height * 100} filter={n => Number(n) / 100} />
+        {Object.keys((RectRender.types[rect.type] || {}).rectTypes || {}).map(key => (
+          <Value
+            updateValue={updateValue}
+            name={key}
+            value={(RectRender.types[rect.type].rectTypes[key].edit || (i => i))((rect.values || {})[key])}
+            filter={RectRender.types[rect.type].rectTypes[key].filter}
+            />
+        ))}
       </div>
     );
   }

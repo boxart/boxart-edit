@@ -1,6 +1,6 @@
 class Rect {
   constructor(
-    {type = null, x = 0.5, y = 0.5, width = 1, height = 1} = {},
+    {type = null, x = 0.5, y = 0.5, width = 1, height = 1, values = null} = {},
     children = []
   ) {
     this.type = type;
@@ -8,6 +8,7 @@ class Rect {
     this.y = y;
     this.width = width;
     this.height = height;
+    this.values = values;
     this.children = children;
   }
 

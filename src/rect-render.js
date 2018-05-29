@@ -3,6 +3,7 @@ import {h, Component} from 'preact';
 import Rect from './rect';
 import Box from './box';
 import BoxHeightRatio from './box-height-ratio';
+import BoxImage from './box-image';
 
 const RECT_STATE = {
   INIT: 'INIT',
@@ -300,13 +301,7 @@ class RectRender extends Component {
       ) {
         const {x, y} = position;
         const {x: lx, y: ly} = this.state.position;
-        console.log(new Rect({
-          x: (lx + x) / 2,
-          y: (ly + y) / 2,
-          width: Math.max(lx, x) - Math.min(lx, x),
-          height: Math.max(ly, y) - Math.min(ly, y),
-        }));
-        debugger;
+
         this.addChild(new Rect({
           x: (lx + x) / 2,
           y: (ly + y) / 2,
@@ -384,6 +379,7 @@ class RectRender extends Component {
 RectRender.types = {
   Box,
   BoxHeightRatio,
+  BoxImage,
 };
 
 export default RectRender;
