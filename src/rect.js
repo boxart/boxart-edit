@@ -12,6 +12,10 @@ class Rect {
     this.children = children;
   }
 
+  static fromJson(json) {
+    return new Rect(json, json.children.map(Rect.fromJson));
+  }
+
   addChild(child) {
     return new Rect(this, this.children.concat(child));
   }
