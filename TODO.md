@@ -1,0 +1,12 @@
+- [x] cut, copy & paste
+- [x] reset
+- [x] localStorage
+- [ ] undo & redo
+- [ ] highlight select in hierarchy
+- [ ] ids
+- [ ] render tree with replacements
+- [ ] timeline
+- [ ] scale in box area
+- [ ] ignore down, move selected
+- [ ] snapping borders
+- [ ] snapping ratio
