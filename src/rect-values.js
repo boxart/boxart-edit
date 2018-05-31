@@ -60,7 +60,7 @@ class RectValues extends Component {
 
   updateValue(name, value) {
     console.log(name, value);
-    if (['type', 'x', 'y', 'width', 'height'].includes(name)) {
+    if (['name', 'type', 'x', 'y', 'width', 'height'].includes(name)) {
       this.props.update(this.props.rect.assign({
         [name]: value,
       }));
@@ -80,6 +80,7 @@ class RectValues extends Component {
     const {updateValue} = this;
     return (
       <div>
+        <Value updateValue={updateValue} name={'name'} value={rect.name} filter={s => s} />
         <TypeDropdown updateValue={updateValue} name={'type'} value={rect.type} />
         <Value updateValue={updateValue} name={'x'} value={rect.x * 100} filter={n => Number(n) / 100} />
         <Value updateValue={updateValue} name={'y'} value={rect.y * 100} filter={n => Number(n) / 100} />

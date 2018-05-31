@@ -25,6 +25,16 @@ class RectEditor extends Component {
   }
 
   componentDidMount() {
+    document.addEventListener('cut', event => {
+      event.clipboardData.setData('text/plain', JSON.stringify(this.getRect(this.state.path)));
+      if (this.state.path.length > 0) {
+        this.removeSelect();
+      }
+      else {
+        this.resetRect();
+      }
+      event.preventDefault();
+    });
     document.addEventListener('copy', event => {
       event.clipboardData.setData('text/plain', JSON.stringify(this.getRect(this.state.path)));
       event.preventDefault();
@@ -37,6 +47,17 @@ class RectEditor extends Component {
         this.updateSelect(Rect.fromJson(JSON.parse(event.clipboardData.getData('text/plain'))));
       }
       event.preventDefault();
+    });
+    window.addEventListener('keyup', event => {
+      if (event.key.toLowerCase() === 'z') {
+        if (event.shiftKey) {
+          this.redo();
+        }
+        else {
+          this.undo();
+        }
+        event.preventDefault();
+      }
     });
   }
 
@@ -55,8 +76,35 @@ class RectEditor extends Component {
     return rect;
   }
 
+  doState(action, state) {
+    this.setState(Object.assign({}, state, {
+      action,
+      undo: Object.assign({}, this.state),
+      redo: null,
+    }));
+  }
+
+  undo() {
+    if (this.state.undo) {
+      this.setState(Object.assign({}, this.state.undo, {
+        redo: Object.assign({}, this.state),
+        path: this.state.path,
+        pasteMode: this.state.pasteMode,
+      }));
+    }
+  }
+
+  redo() {
+    if (this.state.redo) {
+      this.setState(Object.assign({}, this.state.redo, {
+        path: this.state.path,
+        pasteMode: this.state.pasteMode,
+      }));
+    }
+  }
+
   resetRect() {
-    this.setState({
+    this.doState('reset', {
       rect: new Rect(),
     });
   }
@@ -68,14 +116,13 @@ class RectEditor extends Component {
   }
 
   selectRect(...path) {
-    console.log(path);
     this.setState({
       path,
     });
   }
 
   updateChild(rect) {
-    this.setState({
+    this.doState('update', {
       rect,
     });
   }
@@ -98,7 +145,7 @@ class RectEditor extends Component {
     while (parents.length) {
       parent = parents.pop().updateChild(path[parents.length], parent);
     }
-    this.setState({
+    this.doState('operate', {
       rect: parent,
     });
   }
@@ -110,8 +157,16 @@ class RectEditor extends Component {
   }
 
   updateSelect(rect) {
+    console.log("updateSelect", rect);
     this.operateSelect((parents, parent) => {
       return rect;
+    });
+  }
+
+  removeSelect() {
+    this.operateSelect((parents, parent) => {
+      parents[parents.length - 1] = parents[parents.length - 1].removeChild(this.state.path[parents.length - 1]);
+      return parents.pop();
     });
   }
 
@@ -144,7 +199,7 @@ class RectEditor extends Component {
           bottom: '0px',
           left: '84%',
         }}>
-          <RectHierarchy pasteMode={this.state.pasteMode} rect={this.state.rect} changePasteMode={this.changePasteMode} resetRect={this.resetRect} selectRect={this.selectRect} />
+          <RectHierarchy pasteMode={this.state.pasteMode} rect={this.state.rect} path={this.state.path} changePasteMode={this.changePasteMode} resetRect={this.resetRect} selectRect={this.selectRect} />
         </div>
       </div>
     );

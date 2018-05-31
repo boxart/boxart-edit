@@ -1,9 +1,9 @@
 - [x] cut, copy & paste
 - [x] reset
 - [x] localStorage
-- [ ] undo & redo
-- [ ] highlight select in hierarchy
-- [ ] ids
+- [x] undo & redo
+- [x] highlight select in hierarchy
+- [x] ids
 - [ ] render tree with replacements
 - [ ] timeline
 - [ ] scale in box area
