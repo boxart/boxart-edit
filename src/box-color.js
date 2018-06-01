@@ -1,7 +1,7 @@
 import {h} from 'preact';
 import Box from './box';
 
-class BoxImage extends Box {
+class BoxColor extends Box {
   render() {
     const {props} = this;
     const {rect, children} = props;
@@ -22,7 +22,7 @@ class BoxImage extends Box {
           bottom: `${(1 - rect.y) * 100 - rect.height / 2 * 100}%`,
           left: `${rect.x * 100 - rect.width / 2 * 100}%`,
         }, props.dom.style, {
-          background: `url(${values.source}) center / cover no-repeat`
+          background: values.color,
         })}>
           {children}
       </div>
@@ -30,11 +30,11 @@ class BoxImage extends Box {
   }
 }
 
-BoxImage.rectTypes = {
-  source: {
+BoxColor.rectTypes = {
+  color: {
     edit(source) {return source;},
     filter(source) {return source;},
   },
 };
 
-export default BoxImage;
+export default BoxColor;

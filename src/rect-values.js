@@ -1,6 +1,6 @@
 import {h, Component} from 'preact';
 
-import RectRender from './rect-render';
+const BoxTypes = require('./box-types').default;
 
 class Value extends Component {
   constructor(...args) {
@@ -9,9 +9,13 @@ class Value extends Component {
     this.onUpdate = this.onUpdate.bind(this);
   }
 
+  doUpdate(name, value) {
+    this.props.updateValue(name, (this.props.filter || (i => i))(value));
+  }
+
   onUpdate(event) {
     if (event.type === 'blur' || event.which === 13) {
-      this.props.updateValue(this.props.name, (this.props.filter || (i => i))(event.target.value));
+      this.doUpdate(this.props.name, event.target.value);
       if (event.which === 13) {
         this.base.getElementsByTagName('input')[0].blur();
       }
@@ -38,12 +42,20 @@ class Value extends Component {
 }
 
 class TypeDropdown extends Value {
+  // doUpdate(name, value) {
+  //   const Type = BoxTypes.types[value];
+  //   const update
+  //   if (Type) {
+  //
+  //   }
+  // }
+
   renderInput({name, value}) {
     const {onUpdate} = this;
     return (
       <select id={`value_${name}`} onBlur={onUpdate} onKeyDown={onUpdate}>
         <option value={''}>---</option>
-        {Object.keys(RectRender.types).map(key => (
+        {Object.keys(BoxTypes).map(key => (
           <option value={key} selected={key === value}>{key}</option>
         ))}
       </select>
@@ -86,12 +98,12 @@ class RectValues extends Component {
         <Value updateValue={updateValue} name={'y'} value={rect.y * 100} filter={n => Number(n) / 100} />
         <Value updateValue={updateValue} name={'width'} value={rect.width * 100} filter={n => Number(n) / 100} />
         <Value updateValue={updateValue} name={'height'} value={rect.height * 100} filter={n => Number(n) / 100} />
-        {Object.keys((RectRender.types[rect.type] || {}).rectTypes || {}).map(key => (
+        {Object.keys((BoxTypes[rect.type] || {}).rectTypes || {}).map(key => (
           <Value
             updateValue={updateValue}
             name={key}
-            value={(RectRender.types[rect.type].rectTypes[key].edit || (i => i))((rect.values || {})[key])}
-            filter={RectRender.types[rect.type].rectTypes[key].filter}
+            value={(BoxTypes[rect.type].rectTypes[key].edit || (i => i))((rect.values || {})[key])}
+            filter={BoxTypes[rect.type].rectTypes[key].filter}
             />
         ))}
       </div>

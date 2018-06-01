@@ -1,9 +1,8 @@
 import {h, Component} from 'preact';
 
 import Rect from './rect';
-import Box from './box';
-import BoxHeightRatio from './box-height-ratio';
-import BoxImage from './box-image';
+
+const BoxTypes = require('./box-types').default;
 
 const RECT_STATE = {
   INIT: 'INIT',
@@ -117,7 +116,14 @@ class RectState {
   }
 }
 
-const colors = ['ffb5e8', 'b28dff', 'dcd3ff', 'aff8db', 'bffcc6', 'ffc9de'];
+// const colors = ['ffb5e8', 'b28dff', 'dcd3ff', 'aff8db', 'bffcc6', 'ffc9de'];
+
+const colorChances = 'ffb5e8b2dcd3ac69'.split('');
+const c1 = () => colorChances[Math.random() * colorChances.length  | 0];
+const colors =
+  colorChances.map(l => `${l}${c1()}${c1()}${c1()}${c1()}${c1()}`)
+  .concat(colorChances.map(l => `${l}${c1()}${c1()}${c1()}${c1()}${c1()}`))
+  .concat(colorChances.map(l => `${l}${c1()}${c1()}${c1()}${c1()}${c1()}`));
 
 class RectRender extends Component {
   constructor(...args) {
@@ -347,14 +353,16 @@ class RectRender extends Component {
       <Box
         rect={rect}
         // Shadow={Shadow}
-        style={{
-          cursor: this.state.isDrag() ? 'grabbing' : this.state.isAdd() ? 'crosshair' : '',
-          background: `#${this.color}`,
-        }}
-        onMouseDown={onMouseDown}
-        onMouseUp={onMouseUp}
-        onMouseMove={onMouseMove}
-        onMouseLeave={onMouseLeave}>
+        dom={{
+          style: {
+            cursor: this.state.isDrag() ? 'grabbing' : this.state.isAdd() ? 'crosshair' : '',
+            background: `#${this.color}`,
+          },
+          onMouseDown: onMouseDown,
+          onMouseUp: onMouseUp,
+          onMouseMove: onMouseMove,
+          onMouseLeave: onMouseLeave,
+        }}>
         {rect.children.map((child, index) => (
           <RectRender key={index} rect={child} index={index}
             selectRect={selectRect.bind(null, index)}
@@ -376,10 +384,6 @@ class RectRender extends Component {
   }
 }
 
-RectRender.types = {
-  Box,
-  BoxHeightRatio,
-  BoxImage,
-};
+RectRender.types = BoxTypes;
 
 export default RectRender;
