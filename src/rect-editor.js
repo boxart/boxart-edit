@@ -4,6 +4,7 @@ import Rect from './rect';
 import RectRender from './rect-render';
 import RectValues from './rect-values';
 import RectHierarchy from './rect-hierarchy';
+import RectTimeline from './rect-timeline';
 
 const noop = () => {};
 
@@ -15,6 +16,7 @@ class RectEditor extends Component {
       pasteMode: 'paste',
       rect: Rect.fromJson(JSON.parse(localStorage.lastRect || JSON.stringify(new Rect()))),
       path: [],
+      meta: {},
     };
 
     this.updateChild = this.updateChild.bind(this);
@@ -22,6 +24,7 @@ class RectEditor extends Component {
     this.resetRect = this.resetRect.bind(this);
     this.selectRect = this.selectRect.bind(this);
     this.updateSelect = this.updateSelect.bind(this);
+    this.setEditorMeta = this.setEditorMeta.bind(this);
   }
 
   componentDidMount() {
@@ -46,7 +49,6 @@ class RectEditor extends Component {
       event.preventDefault();
     });
     document.addEventListener('paste', event => {
-      debugger;
       if (event.target.tagName.toLowerCase() === 'input') {
         return;
       }
@@ -180,18 +182,34 @@ class RectEditor extends Component {
     });
   }
 
+  setEditorMeta(metaName, metaState) {
+    this.setState({
+      meta: Object.assign({}, this.state.meta, metaState),
+    });
+  }
+
   render() {
     const selectRect = this.getRect(this.state.path);
     return (
       <div>
         <div style={{
           position: 'absolute',
-          top: '0px',
+          top: '20%',
           right: '33%',
           bottom: '0px',
           left: '0px',
         }}>
           <RectRender rect={this.state.rect} selectRect={this.selectRect} updateChild={this.updateChild} removeChild={noop} />
+        </div>
+        <div style={{
+          position: 'absolute',
+          top: '0px',
+          right: '33%',
+          bottom: '80%',
+          left: '0px',
+          overflow: 'hidden',
+        }}>
+          <RectTimeline rect={this.state.rect} animation={{}} meta={this.state.meta} updateRect={this.updateChild} setEditorMeta={this.setEditorMeta} />
         </div>
         <div style={{
           position: 'absolute',

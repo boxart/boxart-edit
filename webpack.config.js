@@ -9,7 +9,14 @@ module.exports = {
         test: /\.jsx?$/,
         loader: 'babel-loader',
         options: {
-          presets: [['env', {modules: false}], 'preact'],
+          babelrc: false,
+          presets: [
+            ['env', {
+              modules: false,
+              targets: {browsers: 'chrome 65'},
+            }],
+            'preact'
+          ],
         },
       },
     ],
