@@ -4,7 +4,7 @@
 - [x] undo & redo
 - [x] highlight select in hierarchy
 - [x] ids
-- [ ] render tree with replacements
+- [x] render tree with replacements
 - [ ] timeline
 - [ ] scale in box area
 - [ ] ignore down, move selected

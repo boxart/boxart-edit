@@ -16,7 +16,7 @@ class BoxHeightRatio extends Box {
           right: `${(1 - rect.x) * 100 - rect.width / 2 * 100}%`,
           left: `${rect.x * 100 - rect.width / 2 * 100}%`,
           paddingBottom: `${rect.height * 100}%`,
-        }, props.dom.style)}>
+        }, props.dom && props.dom.style)}>
         {children}
       </div>
     );

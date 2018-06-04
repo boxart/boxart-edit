@@ -14,7 +14,7 @@ class RenderBox extends Component {
       if (replace && replace[rect.name]) {
         return replace[rect.name];
       }
-      const Box = RenderBox.types[rect.type || 'Box'];
+      const Box = require('./box-types').default[rect.type || 'Box'];
       return (
         <Box rect={rect}>
           {insert && insert[rect.name] || rect.children.map((child, index) => render(child))}
@@ -25,6 +25,6 @@ class RenderBox extends Component {
   }
 }
 
-RenderBox.types = require('./box-types').default;
+// RenderBox.types = require('./box-types').default;
 
 export default RenderBox;

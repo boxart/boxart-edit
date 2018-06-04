@@ -2,7 +2,7 @@ import {h} from 'preact';
 import Box from './box';
 import RenderBox from './render-box';
 
-class BoxBox extends Box {
+class BoxInsert extends Box {
   render() {
     const {props} = this;
     const {rect, children} = props;
@@ -22,14 +22,14 @@ class BoxBox extends Box {
           right: `${(1 - rect.x) * 100 - rect.width / 2 * 100}%`,
           bottom: `${(1 - rect.y) * 100 - rect.height / 2 * 100}%`,
           left: `${rect.x * 100 - rect.width / 2 * 100}%`,
-        }, props.dom.style)}>
+        }, props.dom && props.dom.style)}>
         <RenderBox rect={values.box} replace={values.replace} insert={values.insert} />
       </div>
     );
   }
 }
 
-BoxBox.rectTypes = {
+BoxInsert.rectTypes = {
   box: {
     edit(source) {return JSON.stringify(source);},
     filter(source) {return JSON.parse(source);},
@@ -44,4 +44,4 @@ BoxBox.rectTypes = {
   },
 };
 
-export default BoxBox;
+export default BoxInsert;
