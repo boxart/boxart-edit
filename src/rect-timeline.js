@@ -1,6 +1,8 @@
 import {h, Component} from 'preact';
 
-import * as tm from './timeline';
+import Animation from './animation';
+
+import BoxTypes from './box-types';
 
 class Keyframe extends Component {
   render() {
@@ -23,39 +25,59 @@ class ValueBody extends Component {
 }
 
 class ValueHeader extends Component {
-  render() {
+  render({value: {key}}) {
     return (
       <div style={{position: 'relative'}}>
-        <span>TITLE</span>
+        <span>{key}&nbsp;</span>
       </div>
     );
   }
 }
 
 class BoxBody extends Component {
-  render({rect, animated}) {
-    const valued = [{}, {}];
+  render({rect, animated = []}) {
+    const type = BoxTypes[rect.type] || BoxTypes.Box;
+    const valued = [
+      {key: 'x'}, {key: 'y'}, {key: 'width'}, {key: 'height'},
+      ...(Object.keys(type.rectTypes || {}).map(key => ({key})))
+    ];
     return (
       <div style={{minWidth: '100%'}}>
         <div style={{
           minWidth: '100%',
           background: '#eee',
         }}>&nbsp;</div>
-        {valued.map(value => <ValueBody value={value} />)}
+        {animated.map(animate => <ValueBody value={animate} />)}
+        <div style={{
+          minWidth: '100%',
+          background: '#eee',
+        }}>&nbsp;</div>
       </div>
     );
   }
 }
 
 class BoxHeader extends Component {
-  render({rect, animated}) {
-    const valued = [{}, {}];
+  render({rect, animated = [], addProperty}) {
+    const type = BoxTypes[rect.type] || BoxTypes.Box;
+    const valued = [
+      {key: 'x'}, {key: 'y'}, {key: 'width'}, {key: 'height'},
+      ...(Object.keys(type.rectTypes || {}).map(key => ({key})))
+    ];
+    console.log(valued, animated);
     return (
       <div>
         <div style={{position: 'relative'}}>
           <span>{rect.name || 'root'}</span>
         </div>
-        {valued.map(value => <ValueHeader value={value} />)}
+        {animated.map(animate => <ValueHeader value={animate} />)}
+        <div style={{height: '1em', overflow: 'hidden'}}>
+          <select onChange={event => event.target.value && addProperty(rect.name, event.target.value)}>
+            <option>-----</option>
+            {valued.map(value => <option value={value.key}>{value.key}</option>)}
+          </select>
+          &nbsp;
+        </div>
       </div>
     );
   }
@@ -116,7 +138,7 @@ class Duration extends Component {
 
   componentDidUpdate() {
     const cellHeight = this.base.parentNode.children[2].clientHeight - 2;
-    this.base.style.width = `${cellHeight * this.props.duration * 30 + 2}px`;
+    this.base.style.width = `${cellHeight * this.props.duration + 2}px`;
   }
 
   render() {
@@ -176,37 +198,42 @@ class Timeline extends Component {
     };
 
     this.setCursor = this.setCursor.bind(this);
+    this.addProperty = this.addProperty.bind(this);
+    this.removeProperty = this.removeProperty.bind(this);
+    this.addFrame = this.addFrame.bind(this);
+    this.changeFrame = this.changeFrame.bind(this);
+    this.removeFrame = this.removeFrame.bind(this);
   }
 
   componentWillReceiveProps(props) {
     switch (this.props.meta.state) {
     case void 0:
     case TIMELINE_NEUTRAL:
-      this.props.setEditorMeta('timeline', {
-        beginRect: props.rect,
-        endRect: props.rect,
-        animation: {
-          duration: props.meta.cursor / 30,
-        },
-      });
+      if (props.meta.animation === void 0) {
+        this.props.setEditorMeta('timeline', {
+          // beginRect: props.rect,
+          // endRect: props.rect,
+          animation: new Animation(),
+        });
+      }
       break;
     case TIMELINE_ANIMATE:
-      if (props.meta.state === 'TIMELINE_SET_BEGIN') {
-        this.props.updateRect(this.props.meta.beginRect);
-      }
-      if (props.meta.state === 'TIMELINE_SET_END') {
-        this.props.updateRect(this.props.meta.endRect);
-      }
+      // if (props.meta.state === 'TIMELINE_SET_BEGIN') {
+      //   this.props.updateRect(this.props.meta.beginRect);
+      // }
+      // if (props.meta.state === 'TIMELINE_SET_END') {
+      //   this.props.updateRect(this.props.meta.endRect);
+      // }
       break;
     case TIMELINE_ANIMATE_KEY:
-      if (props.meta.state === 'TIMELINE_SET_BEGIN') {
-        this.props.updateRect(this.props.meta.beginRect);
-        break;
-      }
-      if (props.meta.state === 'TIMELINE_SET_END') {
-        this.props.updateRect(this.props.meta.endRect);
-        break;
-      }
+      // if (props.meta.state === 'TIMELINE_SET_BEGIN') {
+      //   this.props.updateRect(this.props.meta.beginRect);
+      //   break;
+      // }
+      // if (props.meta.state === 'TIMELINE_SET_END') {
+      //   this.props.updateRect(this.props.meta.endRect);
+      //   break;
+      // }
 
       // if past current duration, set new duration and lastRect
 
@@ -237,7 +264,42 @@ class Timeline extends Component {
     }
   }
 
-  render({rect, animation = {}, meta, setEditorMeta}) {
+  _getAnimation() {
+    return this.props.meta.animation || new Animation();
+  }
+
+  addProperty(boxName, propertyName) {
+    console.log('addProperty', boxName, propertyName);
+    this.props.setEditorMeta('timeline', {
+      animation: this._getAnimation().addProperty(boxName, propertyName)
+    });
+  }
+
+  removeProperty(boxName, propertyName) {
+    this.props.setEditorMeta('timeline', {
+      animation: this._getAnimation().removeProperty(boxName, propertyName)
+    });
+  }
+
+  addFrame(boxName, propertyName, frame) {
+    this.props.setEditorMeta('timeline', {
+      animation: this._getAnimation().addFrame(boxName, propertyName, frame)
+    });
+  }
+
+  changeFrame(boxName, propertyName, time, frame) {
+    this.props.setEditorMeta('timeline', {
+      animation: this._getAnimation().changeFrame(boxName, propertyName, time, frame)
+    });
+  }
+
+  removeFrame(boxName, propertyName, time) {
+    this.props.setEditorMeta('timeline', {
+      animation: this._getAnimation().removeFrame(boxName, propertyName, frame)
+    });
+  }
+
+  render({rect, meta, setEditorMeta}) {
     console.log(this.props, this.state);
     const walk = function*(rects) {
       for (const rect of rects) {
@@ -264,17 +326,20 @@ class Timeline extends Component {
       });
     };
 
+    const {animation = {boxes: []}} = meta || {};
+    console.log(animation);
+
     return (
       <div style={{position: 'relative', height: '100%', overflow: 'scroll'}}>
         <div style={{position: 'absolute', top: 0, left: 0, right: '80%', overflowY: 'scroll', overflowX: 'hidden'}}>
           <KeyframeHeader meta={meta} toggleBegin={toggleBegin} toggleEnd={toggleEnd} />
-          {named.map(named => <BoxHeader rect={named} animated={animation[named.name]} />)}
+          {named.map(named => <BoxHeader rect={named} animated={animation.boxes.find(box => box.name === named.name)} addProperty={this.addProperty} />)}
         </div>
         <div style={{position: 'absolute', top: 0, left: '20%', minWidth: '80%', overflow: 'scroll'}}>
           {(meta.state !== void 0 || meta.state !== TIMELINE_NEUTRAL) ? <Duration duration={meta.animation ? meta.animation.duration : 0} /> : null}
           {(meta.state === TIMELINE_ANIMATE_KEY || meta.state === TIMELINE_MOVE_FRAME) ? <Cursor cursor={meta.cursor} /> : null}
           <KeyframeBody setCursor={this.setCursor} />
-          {named.map(named => <BoxBody rect={named} animated={animation[named.name]} />)}
+          {named.map(named => <BoxBody rect={named} animated={animation.boxes.find(box => box.name === named.name)} />)}
         </div>
       </div>
     )
