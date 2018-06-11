@@ -6,12 +6,12 @@ const EASING = {
 };
 
 const FORMAT = {
-  BEGIN_TO_END: 'beginToEnd',
-  ABSOLUTE: 'absolute',
+  BEGIN_TO_END: 'transition',
+  ABSOLUTE: 'animation',
 };
 
 class Keyframe {
-  constructor({time = 0, value = 0, easing = EASING.LINEAR, format = FORMAT.ABSOLUTE}) {
+  constructor({time = 0, easing = EASING.LINEAR, format = FORMAT.ABSOLUTE, value = format === FORMAT.ABSOLUTE ? 0 : 0.5}) {
     // in 30 frames a second
     this.time = time;
     // ???
@@ -28,9 +28,9 @@ class Keyframe {
 }
 
 class Property {
-  constructor() {
+  constructor({name, keyframes = []} = {}) {
     this.name = name;
-    this.keyframes = [];
+    this.keyframes = keyframes;
   }
 
   _changeKeyframes(time, newFrame) {
@@ -45,7 +45,7 @@ class Property {
   }
 
   _findFrame(time) {
-    return (this.keyframes.find(key => key.time === time) || new Property({time}));
+    return (this.keyframes.find(key => key.time === time) || new Keyframe({time}));
   }
 
   addFrame(frame) {
@@ -62,12 +62,13 @@ class Property {
 }
 
 class Box {
-  constructor() {
+  constructor({name = '', properties = []} = {}) {
     this.name = name;
-    this.properties = [];
+    this.properties = properties;
   }
 
   _changeProperties(propertyName, newProperty) {
+    console.log('_changeProperties', propertyName, newProperty);
     return new Box(Object.assign({}, this, {
       properties: [
         ...this.properties.filter(prop => prop.name !== propertyName),
@@ -81,6 +82,7 @@ class Box {
   }
 
   addProperty(propertyName) {
+    console.log(this._changeProperties(propertyName, this._findProperty(propertyName)));
     return this._changeProperties(propertyName, this._findProperty(propertyName));
   }
 
@@ -88,39 +90,46 @@ class Box {
     return this._changeProperties(propertyName, null);
   }
 
-  addFrame(frame) {
+  addFrame(propertyName, frame) {
     return this._changeProperties(propertyName, this._findProperty(propertyName).addFrame(frame));
   }
 
-  changeFrame(time, frame) {
+  changeFrame(propertyName, time, frame) {
     return this._changeProperties(propertyName, this._findProperty(propertyName).changeFrame(time, frame));
   }
 
-  removeFrame(time) {
+  removeFrame(propertyName, time) {
     return this._changeProperties(propertyName, this._findProperty(propertyName).removeFrame(time));
   }
 }
 
 class Animation {
-  constructor() {
-    this.boxes = [];
+  constructor({boxes = [], duration = 30} = {}) {
+    this.boxes = boxes;
+    this.duration = duration;
   }
 
   static stuFromJson() {
     // made by boxes per json?
   }
 
-  get duration() {
-    return this.boxes.reduce((carry, box) => {
-      return box.properties.reduce((carry, prop) => {
-        return prop.keyframes.reduce((carry, key) => {
-          return Math.max(key, carry);
-        }, carry);
-      }, carry);
-    }, 0);
+  // get duration() {
+  //   return this.boxes.reduce((carry, box) => {
+  //     return box.properties.reduce((carry, prop) => {
+  //       return prop.keyframes.reduce((carry, key) => {
+  //         return Math.max(key, carry);
+  //       }, carry);
+  //     }, carry);
+  //   }, 0);
+  // }
+
+  assign(values) {
+    console.log(new Animation(Object.assign({}, this, values)));
+    return new Animation(Object.assign({}, this, values));
   }
 
   _changeBoxes(boxName, newBox) {
+    console.log('_changeBoxes', boxName, newBox);
     return new Animation(Object.assign({}, this, {
       boxes: [
         ...this.boxes.filter(box => box.name !== boxName),
@@ -137,6 +146,7 @@ class Animation {
   }
 
   addProperty(boxName, propertyName) {
+    console.log(this._changeBoxes(boxName, this._findBox(boxName).addProperty(propertyName)));
     return this._changeBoxes(boxName, this._findBox(boxName).addProperty(propertyName));
   }
 
