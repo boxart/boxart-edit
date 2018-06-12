@@ -1,10 +1,17 @@
 import {h, Component} from 'preact';
 
-import Animation from './animation';
+import Animation, {FORMAT} from './animation';
 
 import BoxTypes from './box-types';
 
 class KeyframeEdit extends Component {
+  constructor(...args) {
+    super(...args);
+
+    this.changeValue = this.changeValue.bind(this);
+    this.changeFormat = this.changeFormat.bind(this);
+  }
+
   componentDidMount() {
     this.componentDidUpdate();
   }
@@ -20,14 +27,28 @@ class KeyframeEdit extends Component {
     return false;
   }
 
-  render() {
+  changeValue(event) {
+    this.props.changeValue(event.target.value);
+  }
+
+  changeFormat(event) {
+    this.props.changeFormat(
+      event.target.checked ?
+        event.target.value :
+        event.target.value === FORMAT.TRANSITION ?
+          FORMAT.ANIMATION :
+          FORMAT.TRANSITION
+    );
+  }
+
+  render({keyframe}) {
     return (
       <div
         onClick={this.dropClicks}
         style={{position: 'absolute', display: 'inline-block', background: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap'}}>
-        <label><input type="text" /></label>
-        <label title="transition"><input type="radio" />T</label>
-        <label title="animation"><input type="radio" />A</label>
+        <label><input type="text" value={keyframe.value} onBlur={this.changeValue} /></label>
+        <label title="transition"><input type="radio" checked={keyframe.format === FORMAT.TRANSITION} value={FORMAT.TRANSITION} onChange={this.changeFormat} />T</label>
+        <label title="animation"><input type="radio" checked={keyframe.format === FORMAT.ANIMATION} value={FORMAT.ANIMATION} onChange={this.changeFormat} />A</label>
       </div>
     );
   }
