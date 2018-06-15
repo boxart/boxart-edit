@@ -7,7 +7,9 @@ const EASING = {
 
 const FORMAT = {
   BEGIN_TO_END: 'transition',
+  TRANSITION: 'transition',
   ABSOLUTE: 'animation',
+  ANIMATION: 'animation',
 };
 
 class Keyframe {

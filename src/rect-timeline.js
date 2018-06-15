@@ -28,24 +28,26 @@ class KeyframeEdit extends Component {
   }
 
   changeValue(event) {
-    this.props.changeValue(event.target.value);
+    this.props.changeFrame(this.props.keyframe.time, {
+      value: event.target.value,
+    });
   }
 
   changeFormat(event) {
-    this.props.changeFormat(
-      event.target.checked ?
+    this.props.changeFrame(this.props.keyframe.time, {
+      format: event.target.checked ?
         event.target.value :
         event.target.value === FORMAT.TRANSITION ?
           FORMAT.ANIMATION :
           FORMAT.TRANSITION
-    );
+    });
   }
 
   render({keyframe}) {
     return (
       <div
         onClick={this.dropClicks}
-        style={{position: 'absolute', display: 'inline-block', background: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap'}}>
+        style={{position: 'absolute', display: 'inline-block', background: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap', zIndex: 10}}>
         <label><input type="text" value={keyframe.value} onBlur={this.changeValue} /></label>
         <label title="transition"><input type="radio" checked={keyframe.format === FORMAT.TRANSITION} value={FORMAT.TRANSITION} onChange={this.changeFormat} />T</label>
         <label title="animation"><input type="radio" checked={keyframe.format === FORMAT.ANIMATION} value={FORMAT.ANIMATION} onChange={this.changeFormat} />A</label>
@@ -146,11 +148,13 @@ class ValueBody extends Component {
   }
 
   moveFrame(time, newTime) {
-    
+    this.props.changeFrame(this.props.value.name, time, {
+      time: newTime,
+    });
   }
 
   changeFrame(time, frame) {
-    
+    this.props.changeFrame(this.props.value.name, time, frame);
   }
 
   removeFrame(time) {
@@ -210,11 +214,31 @@ class BoxBody extends Component {
   }
 
   addFrame(propertyName, frame) {
-    this.props.addFrame(this.props.animated.name, propertyName, frame);
+    const {rect} = this.props;
+    const type = BoxTypes[rect.type] || BoxTypes.Box;
+    if (propertyName in type.rectTypes && 'default' in type.rectTypes[propertyName] && !('value' in frame)) {
+      this.props.addFrame(this.props.animated.name, propertyName, Object.assign({
+        value: type.rectTypes[propertyName].default(),
+      }, frame));
+    } else {
+      this.props.addFrame(this.props.animated.name, propertyName, frame);
+    }
   }
 
   changeFrame(propertyName, time, frame) {
-    this.props.changeFrame(this.props.animated.name, propertyName, time, frame);
+    if ('value' in frame) {
+      const {rect} = this.props;
+      const type = BoxTypes[rect.type] || BoxTypes.Box;
+      let value = frame.value;
+      if (propertyName in type.rectTypes) {
+        value = type.rectTypes[propertyName].filter(value);
+      }
+      this.props.changeFrame(this.props.animated.name, propertyName, time, Object.assign({}, frame, {
+        value,
+      }));
+    } else {
+      this.props.changeFrame(this.props.animated.name, propertyName, time, frame);
+    }
   }
 
   removeFrame(propertyName, time) {
