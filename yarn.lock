@@ -957,6 +957,10 @@ babel-runtime@^6.18.0, babel-runtime@^6.22.0, babel-runtime@^6.26.0:
     core-js "^2.4.0"
     regenerator-runtime "^0.11.0"
 
+babel-standalone@^6.26.0:
+  version "6.26.0"
+  resolved "https://registry.yarnpkg.com/babel-standalone/-/babel-standalone-6.26.0.tgz#15fb3d35f2c456695815ebf1ed96fe7f015b6886"
+
 babel-template@^6.24.1, babel-template@^6.26.0:
   version "6.26.0"
   resolved "https://registry.yarnpkg.com/babel-template/-/babel-template-6.26.0.tgz#de03e2d16396b069f46dd9fff8521fb1a0e35e02"
@@ -1071,6 +1075,24 @@ bonjour@^3.5.0:
 boolbase@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/boolbase/-/boolbase-1.0.0.tgz#68dff5fbe60c51eb37725ea9e3ed310dcc1e776e"
+
+boxart-functions@^0.2.0-alpha.10:
+  version "0.2.0-alpha.10"
+  resolved "https://registry.yarnpkg.com/boxart-functions/-/boxart-functions-0.2.0-alpha.10.tgz#a6e109fbd44e3235a37ff2db050665533a7df5c4"
+  dependencies:
+    boxart "^0.2.0-alpha.10"
+
+boxart-preact@^0.2.0-alpha.10:
+  version "0.2.0-alpha.10"
+  resolved "https://registry.yarnpkg.com/boxart-preact/-/boxart-preact-0.2.0-alpha.10.tgz#8e553a197328faa843849584224bcca375f9d85c"
+  dependencies:
+    boxart "^0.2.0-alpha.10"
+
+boxart@^0.2.0-alpha.10:
+  version "0.2.0-alpha.10"
+  resolved "https://registry.yarnpkg.com/boxart/-/boxart-0.2.0-alpha.10.tgz#d2d09500a9fa7371082f000ce5e552115cb1da1f"
+  dependencies:
+    babel-standalone "^6.26.0"
 
 brace-expansion@^1.1.7:
   version "1.1.11"
@@ -2553,9 +2575,9 @@ handle-thing@^1.2.5:
   version "1.2.5"
   resolved "https://registry.yarnpkg.com/handle-thing/-/handle-thing-1.2.5.tgz#fd7aad726bf1a5fd16dfc29b2f7a6601d27139c4"
 
-hard-source-webpack-plugin@^0.7.2:
-  version "0.7.2"
-  resolved "https://registry.yarnpkg.com/hard-source-webpack-plugin/-/hard-source-webpack-plugin-0.7.2.tgz#58ee0fe170eefe4cba56a7e93db51d2ce7e3f7d9"
+hard-source-webpack-plugin@^0.8.1:
+  version "0.8.1"
+  resolved "https://registry.yarnpkg.com/hard-source-webpack-plugin/-/hard-source-webpack-plugin-0.8.1.tgz#18a36c9a98930ce8948f07de4d3c8917b1310c28"
   dependencies:
     chalk "^2.4.1"
     find-cache-dir "^1.0.0"
