@@ -1,6 +1,6 @@
 import {h, Component} from 'preact';
 
-// import {update, animate, present} from 'boxart-functions';
+import {update, animate, present} from 'boxart-functions';
 
 class Box extends Component {
   render() {
@@ -24,33 +24,49 @@ class Box extends Component {
     );
   }
 
-  // static update() {
-  //   return update.object({
-  //     x: update.rect().asElement(update.value((state, rect) => (rect.left + rect.right) / 2)),
-  //     y: update.rect().asElement(update.value((state, rect) => (rect.top + rect.bottom) / 2)),
-  //     width: update.rect().asElement(update.property('width')),
-  //     height: update.rect().asElement(update.property('height')),
-  //   });
-  // }
-  //
-  // static animate(box) {
-  //   const object = {};
-  //   for (const property of box.properties) {
-  //     object[property.name] = animate.keyframes(property.keyframes.map(frame => (
-  //       animate.seconds(frame.time / 30).frame(frame.format === 'animation' ? animate.constant(frame.value) : animate.at(frame.value / 100)),
-  //     )));
-  //   }
-  //   return animate.object(object);
-  // }
-  //
-  // static present(box) {
-  //   return present.style({
-  //     transform: present.concat([
-  //       present.translate([present.key('x').to(present.end).px(), present.key('y').to(present.end).px()]),
-  //       present.scale([present.key('width').over(present.end), present.key('height').over(present.end)]),
-  //     ]),
-  //   });
-  // }
+  static update() {
+    return update.object({
+      x: update.constant(0),
+      y: update.constant(0),
+      width: update.constant(100),
+      height: update.constant(100),
+    });
+  }
+
+  static animate(box, duration) {
+    const object = {};
+    for (const property of box.properties) {
+      const keyframes = property.keyframes;
+      const firstFrame = (keyframes.length > 0) ? keyframes[0] : {time: 0, value: property.default || 0};
+      const lastFrame = (keyframes.length > 0) ? keyframes[keyframes.length - 1] : {time: 0, value: property.default || 0};
+      object[property.name] = [
+        animate.seconds((firstFrame.time + 1) / 30).frame(animate.value(() => firstFrame.value)),
+        ...keyframes.slice(0, keyframes.length - 1).map((frame, index) => (
+          animate.seconds((keyframes[index + 1].time - frame.time) / 30).frame(animate.value(() => firstFrame.value))
+        )),
+        animate.seconds((duration - lastFrame.time) / 30).frame(animate.value(() => lastFrame.value)),
+        // animate.seconds((duration + 0.001) / 30).frame(animate.value(() => lastFrame.value)),
+      ];
+      console.log(object[property.name], [
+        ...keyframes.map((frame, index) => (
+          [(frame.time - (index > 0 ? keyframes[index - 1].time : 0)) / 30, frame.value]
+        )),
+        (duration - lastFrame.time) / 30, keyframes.length ? keyframes[keyframes.length - 1].value : (property.default || 0),
+      ]);
+      object[property.name] = animate.keyframes(object[property.name]);
+    }
+    console.log(object);
+    return animate.object(object);
+  }
+
+  static present(box) {
+    return present.style({
+      transform: present.concat([
+        present.translate([present.key('x').percent(), present.key('y').percent()]),
+        present.scale([present.key('width').div(present.constant(100)), present.key('height').div(present.constant(100))]),
+      ]),
+    });
+  }
 }
 
 export default Box;
