@@ -2,7 +2,7 @@ import {h, Component} from 'preact';
 
 import Animation, {FORMAT} from './animation';
 
-import BoxTypes from './box-types';
+import BoxTypes, {animation as BoxTypes_animation} from './box-types';
 
 class KeyframeEdit extends Component {
   constructor(...args) {
@@ -216,7 +216,12 @@ class BoxBody extends Component {
   addFrame(propertyName, frame) {
     const {rect} = this.props;
     const type = BoxTypes[rect.type] || BoxTypes.Box;
-    if (propertyName in type.rectTypes && 'default' in type.rectTypes[propertyName] && !('value' in frame)) {
+    if (
+      type.rectTypes &&
+      propertyName in type.rectTypes &&
+      'default' in type.rectTypes[propertyName] &&
+      !('value' in frame)
+    ) {
       this.props.addFrame(this.props.animated.name, propertyName, Object.assign({
         value: type.rectTypes[propertyName].default(),
       }, frame));
@@ -230,13 +235,23 @@ class BoxBody extends Component {
       const {rect} = this.props;
       const type = BoxTypes[rect.type] || BoxTypes.Box;
       let value = frame.value;
-      if (propertyName in type.rectTypes) {
+      if (
+        type.rectTypes &&
+        propertyName in type.rectTypes
+      ) {
         value = type.rectTypes[propertyName].filter(value);
       }
+      if (['x', 'y', 'width', 'height'].includes(propertyName)) {
+        value = Number(value);
+      }
+      console.log(247, ...arguments, value, Object.assign({}, frame, {
+        value,
+      }));
       this.props.changeFrame(this.props.animated.name, propertyName, time, Object.assign({}, frame, {
         value,
       }));
     } else {
+      console.log(252, ...arguments);
       this.props.changeFrame(this.props.animated.name, propertyName, time, frame);
     }
   }
@@ -537,6 +552,54 @@ class Timeline extends Component {
     }
   }
 
+  async componentDidUpdate() {
+    if (this.props.meta.state === TIMELINE_ANIMATE_KEY) {
+      await Promise.resolve();
+      if (this.animation) {
+        return;
+      }
+      const animation = this.animation = BoxTypes_animation(this.props.meta.animation);
+      const data = this.data = {
+        animated: {
+          root: {
+            element: document.getElementsByClassName('root').length &&
+              document.getElementsByClassName('root')[0] ||
+              document.getElementById('editRegion').children[0],
+          },
+        },
+        store: null,
+        state: null,
+        begin: null,
+        end: null,
+      };
+      console.log(544, animation);
+      data.end = animation.update(data.end || {}, data.animated.root.element, data);
+      data.begin = animation.update.copy(data.begin || {}, data.end);
+      data.state = animation.update.copy(data.state || {}, data.end);
+      console.log(557, data.end, this.props.meta.cursor / 30);
+      data.state = animation.animate(this.props.meta.cursor / 30, data.state || {}, data.begin, data.end, data);
+      console.log(563, data.state);
+      data.store = animation.present.store(data.store || {}, data.animated.root.element, data);
+      console.log(565, data.store);
+      animation.present(data.animated.root.element, data.state, data);
+    } else {
+      this.animation = null;
+      this.data = null;
+    }
+  }
+
+  componentWillUpdate() {
+    console.log('componentWillUpdate', this.props.meta.state);
+    if (this.animation) {
+      const animation = this.animation;
+      const data = this.data;
+      console.log('restore');
+      animation.present.restore(data.animated.root.element, data.store || {}, data);
+      this.animation = null;
+      this.data = null;
+    }
+  }
+
   setCursor(x) {
     if (!this.props.meta.animation || x > this.props.meta.animation.duration) {
       return;
@@ -598,6 +661,7 @@ class Timeline extends Component {
   }
 
   changeFrame(boxName, propertyName, time, frame) {
+    console.log(650, ...arguments);
     this.props.setEditorMeta('timeline', {
       animation: this._getAnimation().changeFrame(boxName, propertyName, time, frame)
     });
