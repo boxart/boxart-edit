@@ -10,6 +10,7 @@ class BoxHeightRatio extends Box {
     return (
       <div
         {...props.dom}
+        className={rect.name}
         style={Object.assign({
           position: 'absolute',
           top: `${rect.y * 100 - rect.height / 2 * 100}%`,

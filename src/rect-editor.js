@@ -192,7 +192,7 @@ class RectEditor extends Component {
     const selectRect = this.getRect(this.state.path);
     return (
       <div>
-        <div style={{
+        <div id="editRegion" style={{
           position: 'absolute',
           top: '20%',
           right: '33%',
