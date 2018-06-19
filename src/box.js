@@ -40,22 +40,18 @@ class Box extends Component {
       const firstFrame = (keyframes.length > 0) ? keyframes[0] : {time: 0, value: property.default || 0};
       const lastFrame = (keyframes.length > 0) ? keyframes[keyframes.length - 1] : {time: 0, value: property.default || 0};
       object[property.name] = [
-        animate.seconds((firstFrame.time + 1) / 30).frame(animate.value(() => firstFrame.value)),
+        animate.seconds((firstFrame.time + 1) / 30)
+          .frame(animate.value(() => firstFrame.value)),
         ...keyframes.slice(0, keyframes.length - 1).map((frame, index) => (
-          animate.seconds((keyframes[index + 1].time - frame.time) / 30).frame(animate.value(() => firstFrame.value))
+          animate.seconds((keyframes[index + 1].time - frame.time) / 30)
+            .frame(animate.value(() => frame.value))
         )),
-        animate.seconds((duration - lastFrame.time) / 30).frame(animate.value(() => lastFrame.value)),
-        // animate.seconds((duration + 0.001) / 30).frame(animate.value(() => lastFrame.value)),
+        animate.seconds((duration - lastFrame.time) / 30)
+          .frame(animate.value(() => lastFrame.value)),
+        animate.seconds(0.001).frame(animate.value(() => lastFrame.value)),
       ];
-      console.log(object[property.name], [
-        ...keyframes.map((frame, index) => (
-          [(frame.time - (index > 0 ? keyframes[index - 1].time : 0)) / 30, frame.value]
-        )),
-        (duration - lastFrame.time) / 30, keyframes.length ? keyframes[keyframes.length - 1].value : (property.default || 0),
-      ]);
       object[property.name] = animate.keyframes(object[property.name]);
     }
-    console.log(object);
     return animate.object(object);
   }
 
