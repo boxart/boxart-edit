@@ -1,6 +1,6 @@
 import {h, Component} from 'preact';
 
-import Animation, {FORMAT} from './animation';
+import Animation, {Box, Property, Keyframe, FORMAT} from './animation';
 
 import BoxTypes, {animation as BoxTypes_animation} from './box-types';
 
@@ -56,10 +56,11 @@ class KeyframeEdit extends Component {
   }
 }
 
-class Keyframe extends Component {
+class KeyframeItem extends Component {
   constructor(...args) {
     super(...args);
 
+    this.selectFrame = this.selectFrame.bind(this);
     this.onDoubleClick = this.onDoubleClick.bind(this);
   }
 
@@ -75,6 +76,14 @@ class Keyframe extends Component {
     console.log('componentDidUpdate', 'Keyframe', position, cellHeight)
   }
 
+  selectFrame(event) {
+    console.log('selectFrame');
+    this.props.setCursor(this.props.keyframe.time);
+    this.props.selectFrame(this.props.keyframe.time);
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   onDoubleClick(event) {
     this.props.removeFrame(this.props.keyframe.time);
     event.preventDefault();
@@ -82,13 +91,15 @@ class Keyframe extends Component {
     return false;
   }
 
-  render() {
+  render({cursor, selected}) {
+    console.log('Keyframe.render', selected);
     return (
       <div
+        onClick={this.selectFrame}
         onDblClick={this.onDoubleClick}
         style={{position: 'absolute', background: 'black'}}>
         &nbsp;
-        {this.props.cursor === this.props.keyframe.time ?
+        {selected ?
           <KeyframeEdit
             keyframe={this.props.keyframe}
             changeFrame={this.props.changeFrame} /> :
@@ -104,17 +115,26 @@ class ValueBody extends Component {
 
     this.onClick = this.onClick.bind(this);
     this.onDoubleClick = this.onDoubleClick.bind(this);
+    this.onMouseDown = this.onMouseDown.bind(this);
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onMouseUp = this.onMouseUp.bind(this);
     this.addFrame = this.addFrame.bind(this);
     this.changeFrame = this.changeFrame.bind(this);
+    this.selectFrame = this.selectFrame.bind(this);
     this.removeFrame = this.removeFrame.bind(this);
   }
 
-  onClick(event) {
+  getTime(event) {
     const height = event.target.clientHeight - 2;
     let x = event.offsetX / height | 0;
     if (event.target !== this.base) {
       x += event.target.offsetLeft / height | 0;
     }
+    return x;
+  }
+
+  onClick(event) {
+    const x = this.getTime(event);
 
     this.props.setCursor(x);
 
@@ -135,11 +155,63 @@ class ValueBody extends Component {
     return false;
   }
 
-  onMouseDown() {}
+  onMouseDown(event) {
+    if (event.target.tagName.toLowerCase() === 'input') {
+      return;
+    }
 
-  onMouseUp() {}
+    const x = this.getTime(event);
 
-  onMouseMove() {}
+    this.softSelectTime = x;
+    console.log('onMouseDown', x);
+
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  }
+
+  onMouseUp(event) {
+    if (event.target.tagName.toLowerCase() === 'input') {
+      return;
+    }
+
+    this.softSelectTime = null;
+
+    const x = this.getTime(event);
+
+    this.props.setCursor(x);
+
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  }
+
+  onMouseMove(event) {
+    if (event.target.tagName.toLowerCase() === 'input') {
+      return;
+    }
+
+    const {softSelectTime} = this;
+    const {selected, value: {keyframes}} = this.props;
+    console.log('onMouseMove', softSelectTime, keyframes.find(frame => frame.time === softSelectTime));
+    if (typeof softSelectTime !== 'number' || keyframes.every(frame => frame.time !== softSelectTime)) {
+      return;
+    }
+
+    const x = this.getTime(event);
+    console.log('onMouseMove2', x);
+
+    if (x === softSelectTime) {
+      return;
+    }
+
+    this.moveFrame(softSelectTime, x);
+    this.softSelectTime = x;
+
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+  }
 
   addFrame(position) {
     this.props.addFrame(this.props.value.name, {
@@ -157,24 +229,33 @@ class ValueBody extends Component {
     this.props.changeFrame(this.props.value.name, time, frame);
   }
 
+  selectFrame(time) {
+    this.props.selectFrame(this.props.value.name, time);
+  }
+
   removeFrame(time) {
     this.props.removeFrame(this.props.value.name, time);
   }
 
-  render({cursor}) {
+  render({cursor, selected}) {
     return (
       <div
-        onClick={this.onClick}
         onDblClick={this.onDoubleClick}
+        onMouseDown={this.onMouseDown}
+        onMouseMove={this.onMouseMove}
+        onMouseUp={this.onMouseUp}
         style={{
-          background: `1px center url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><rect x="0" y="0" width="16" height="16" fill="rgba(128,128,128,0.5)" /><rect x="1" y="1" width="14" height="14" fill="#eee" /></svg>')`,
+          background: `1px center url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><rect x="0" y="0" width="16" height="16" fill="rgba(128,128,128,0.5)" /><rect x="1" y="1" width="14" height="14" fill="%23eee" /></svg>')`,
         }}>
         {this.props.value.keyframes && this.props.value.keyframes.map(keyframe => (
-          <Keyframe
+          <KeyframeItem
             cursor={cursor}
+            selected={typeof this.softSelectTime !== 'number' && selected && selected.time === keyframe.time ? selected : null}
             keyframe={keyframe}
             changeFrame={this.changeFrame}
-            removeFrame={this.removeFrame} />
+            selectFrame={this.selectFrame}
+            removeFrame={this.removeFrame}
+            setCursor={this.props.setCursor} />
         ))}
         &nbsp;
       </div>
@@ -186,7 +267,12 @@ class ValueHeader extends Component {
   constructor(...args) {
     super(...args);
 
+    this.onClick = this.onClick.bind(this);
     this.onDoubleClick = this.onDoubleClick.bind(this);
+  }
+
+  onClick(event) {
+    this.props.selectProperty(this.props.value.name);
   }
 
   onDoubleClick(event) {
@@ -194,10 +280,10 @@ class ValueHeader extends Component {
     this.props.removeProperty(this.props.value.name);
   }
 
-  render({value: {name}}) {
+  render({value: {name}, selected}) {
     console.log('render', arguments);
     return (
-      <div style={{position: 'relative'}} onDblClick={this.onDoubleClick}>
+      <div style={{position: 'relative', background: selected && selected.property === name ? 'gray' : ''}} onClick={this.onClick} onDblClick={this.onDoubleClick}>
         <span>{name}&nbsp;</span>
       </div>
     );
@@ -210,6 +296,7 @@ class BoxBody extends Component {
 
     this.addFrame = this.addFrame.bind(this);
     this.changeFrame = this.changeFrame.bind(this);
+    this.selectFrame = this.selectFrame.bind(this);
     this.removeFrame = this.removeFrame.bind(this);
   }
 
@@ -256,11 +343,15 @@ class BoxBody extends Component {
     }
   }
 
+  selectFrame(propertyName, time) {
+    this.props.selectFrame(this.props.animated.name, propertyName, time);
+  }
+
   removeFrame(propertyName, time) {
     this.props.removeFrame(this.props.animated.name, propertyName, time);
   }
 
-  render({cursor, rect, animated = []}) {
+  render({cursor, rect, animated = [], selected}) {
     const type = BoxTypes[rect.type] || BoxTypes.Box;
     const valued = [
       {key: 'x'}, {key: 'y'}, {key: 'width'}, {key: 'height'},
@@ -278,8 +369,9 @@ class BoxBody extends Component {
           .map(animate => (
             <ValueBody
               cursor={cursor}
+              selected={selected && selected.box === rect.name && selected.property === animate.name ? selected : null}
               value={animate}
-              addFrame={this.addFrame} changeFrame={this.changeFrame} removeFrame={this.removeFrame}
+              addFrame={this.addFrame} changeFrame={this.changeFrame} selectFrame={this.selectFrame} removeFrame={this.removeFrame}
               setCursor={this.props.setCursor} />
           ))}
         <div style={{
@@ -296,7 +388,9 @@ class BoxHeader extends Component {
     super(...args);
 
     this.addProperty = this.addProperty.bind(this);
+    this.selectProperty = this.selectProperty.bind(this);
     this.removeProperty = this.removeProperty.bind(this);
+    this.selectBox = this.selectBox.bind(this);
   }
 
   addProperty(event) {
@@ -304,28 +398,37 @@ class BoxHeader extends Component {
     event.target.value && this.props.addProperty(rect.name, event.target.value);
   }
 
+  selectProperty(propertyName) {
+    this.props.selectProperty(this.props.rect.name, propertyName);
+  }
+
   removeProperty(propertyName) {
     this.props.removeProperty(this.props.rect.name, propertyName);
   }
 
-  render({rect, animated = []}) {
+  selectBox() {
+    this.props.selectBox(this.props.rect.name);
+  }
+
+  render({rect, animated = [], selected}) {
     const type = BoxTypes[rect.type] || BoxTypes.Box;
     const valued = [
       {key: 'x'}, {key: 'y'}, {key: 'width'}, {key: 'height'},
       ...(Object.keys(type.rectTypes || {}).map(key => ({key})))
     ];
-    console.log(valued, animated);
+
     return (
       <div>
-        <div style={{position: 'relative'}}>
+        <div style={{position: 'relative', background: selected && selected.box === this.props.rect.name && !selected.property ? 'gray' : ''}} onClick={this.selectBox}>
           <span>{rect.name || 'root'}</span>
         </div>
         {animated.properties && valued
           .map(value => animated.properties.find(property => value.key === property.name))
           .filter(Boolean)
-          .map(animate => <ValueHeader value={animate} removeProperty={this.removeProperty} />)}
-        <div style={{height: '1em', overflow: 'hidden'}}>
-          <select onChange={this.addProperty}>
+          .map(animate => <ValueHeader value={animate} selected={selected && selected.box === this.props.rect.name ? selected : null} selectProperty={this.selectProperty} removeProperty={this.removeProperty} />)}
+        <div style={{overflow: 'hidden'}}>
+          <span>&nbsp;</span>
+          <select style={{height: '0'}} onChange={this.addProperty}>
             <option>-----</option>
             {valued.map(value => <option value={value.key}>{value.key}</option>)}
           </select>
@@ -362,7 +465,7 @@ class KeyframeBody extends Component {
             left: 0,
             right: 0,
             // width: '100%',
-            background: `1px center url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><rect x="0" y="0" width="16" height="16" fill="rgba(128,128,128,0.5)" /><rect x="1" y="1" width="14" height="14" fill="#eee" /></svg>')`,
+            background: `1px center url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><rect x="0" y="0" width="16" height="16" fill="rgba(128,128,128,0.5)" /><rect x="1" y="1" width="14" height="14" fill="%23eee" /></svg>')`,
           }}>
           &nbsp;
         </div>
@@ -421,9 +524,19 @@ class AnimationOptionsToggle extends Component {
 }
 
 class KeyframeHeader extends Component {
-  render({meta, toggleOptions, changeDuration}) {
+  constructor(...args) {
+    super(...args);
+
+    this.selectAnimation = this.selectAnimation.bind(this);
+  }
+
+  selectAnimation() {
+    this.props.selectAnimation();
+  }
+
+  render({meta, selected, toggleOptions, changeDuration}) {
     return (
-      <div>
+      <div style={{background: selected && typeof selected.box === 'undefined' ? 'gray' : ''}} onClick={this.selectAnimation}>
         <div>&nbsp;</div>
         <div style={{position: 'fixed', top: 0, left: 0, right: '86.6%', zIndex: 10}}>
           <AnimationOptionsToggle meta={meta} showOptions={meta.showOptions} toggleOptions={toggleOptions} changeDuration={changeDuration} />
@@ -487,9 +600,13 @@ const TIMELINE_NEUTRAL = 'TIMELINE_NEUTRAL';
 const TIMELINE_SET_BEGIN = 'TIMELINE_SET_BEGIN';
 const TIMELINE_SET_END = 'TIMELINE_SET_END';
 const TIMELINE_ANIMATE = 'TIMELINE_ANIMATE';
-const TIMELINE_ANIMATE_KEY = 'TIMELINE_ANIMATE_KEY'; 
+const TIMELINE_ANIMATE_KEY = 'TIMELINE_SELECT_ANIMATE_KEY';
 const TIMELINE_MOVE_FRAME = 'TIMELINE_MOVE_FRAME';
 const TIMELINE_CLIPBOARD = 'TIMELINE_CLIPBOARD';
+const TIMELINE_SELECT_ANIMATION = 'TIMELINE_SELECT_ANIMATION';
+const TIMELINE_SELECT_BOX = 'TIMELINE_SELECT_BOX';
+const TIMELINE_SELECT_PROPERTY = 'TIMELINE_SELECT_PROPERTY';
+const TIMELINE_SELECT_KEYFRAME = 'TIMELINE_SELECT_ANIMATE_KEY';
 
 class Timeline extends Component {
   constructor(...args) {
@@ -503,15 +620,52 @@ class Timeline extends Component {
     this.setCursor = this.setCursor.bind(this);
     this.setDuration = this.setDuration.bind(this);
     this.toggleOptions = this.toggleOptions.bind(this);
+    this.selectAnimation = this.selectAnimation.bind(this);
+    this.selectBox = this.selectBox.bind(this);
     this.addProperty = this.addProperty.bind(this);
+    this.selectProperty = this.selectProperty.bind(this);
     this.removeProperty = this.removeProperty.bind(this);
     this.addFrame = this.addFrame.bind(this);
     this.changeFrame = this.changeFrame.bind(this);
+    this.selectFrame = this.selectFrame.bind(this);
     this.removeFrame = this.removeFrame.bind(this);
   }
 
+  componentDidMount() {
+    document.addEventListener('cut', event => {
+      if (event.target.tagName.toLowerCase() === 'input') {
+        return;
+      }
+      if (!this.props.meta.select) {
+        return;
+      }
+      event.clipboardData.setData('text/plain', JSON.stringify(this.getSelect()));
+      this.resetSelect();
+      event.preventDefault();
+    });
+    document.addEventListener('copy', event => {
+      if (event.target.tagName.toLowerCase() === 'input') {
+        return;
+      }
+      if (!this.props.meta.select) {
+        return;
+      }
+      event.clipboardData.setData('text/plain', JSON.stringify(this.getSelect()));
+      event.preventDefault();
+    });
+    document.addEventListener('paste', event => {
+      if (event.target.tagName.toLowerCase() === 'input') {
+        return;
+      }
+      if (!this.props.meta.select) {
+        return;
+      }
+      this.setSelect(JSON.parse(event.clipboardData.getData('text/plain')));
+      event.preventDefault();
+    });
+  }
+
   componentWillReceiveProps(props) {
-    console.log(props.meta.animation);
     switch (this.props.meta.state) {
     case void 0:
     case TIMELINE_NEUTRAL:
@@ -572,15 +726,11 @@ class Timeline extends Component {
         begin: null,
         end: null,
       };
-      console.log(544, animation);
       data.end = animation.update(data.end || {}, data.animated.root.element, data);
       data.begin = animation.update.copy(data.begin || {}, data.end);
       data.state = animation.update.copy(data.state || {}, data.end);
-      console.log(557, data.end, this.props.meta.cursor / 30);
       data.state = animation.animate(this.props.meta.cursor / 30, data.state || {}, data.begin, data.end, data);
-      console.log(563, data.state);
       data.store = animation.present.store(data.store || {}, data.animated.root.element, data);
-      console.log(565, data.store);
       animation.present(data.animated.root.element, data.state, data);
     } else {
       this.animation = null;
@@ -589,11 +739,9 @@ class Timeline extends Component {
   }
 
   componentWillUpdate() {
-    console.log('componentWillUpdate', this.props.meta.state);
     if (this.animation) {
       const animation = this.animation;
       const data = this.data;
-      console.log('restore');
       animation.present.restore(data.animated.root.element, data.store || {}, data);
       this.animation = null;
       this.data = null;
@@ -608,22 +756,24 @@ class Timeline extends Component {
       this.props.setEditorMeta('timeline', {
         state: TIMELINE_ANIMATE_KEY,
         cursor: x,
+        select: null,
       });
     }
     else if (this.props.meta.cursor !== x) {
       this.props.setEditorMeta('timeline', {
         cursor: x,
+        select: null,
       });
     }
     else {
       this.props.setEditorMeta('timeline', {
         state: TIMELINE_ANIMATE,
+        select: null,
       });
     }
   }
 
   setDuration(duration) {
-    console.log(duration);
     this.props.setEditorMeta('timeline', {
       animation: this._getAnimation().assign({
         duration,
@@ -641,10 +791,66 @@ class Timeline extends Component {
     return this.props.meta.animation || new Animation();
   }
 
+  selectAnimation() {
+    if (
+      this.props.meta.state === TIMELINE_SELECT_ANIMATION
+    ) {
+      return this.props.setEditorMeta('timeline', {
+        state: TIMELINE_ANIMATE,
+        select: null,
+      });
+    }
+
+    this.props.setEditorMeta('timeline', {
+      state: TIMELINE_SELECT_ANIMATION,
+      select: {},
+    });
+  }
+
+  selectBox(boxName) {
+    if (
+      this.props.meta.state === TIMELINE_SELECT_BOX &&
+      this.props.meta.select.box === boxName
+    ) {
+      return this.props.setEditorMeta('timeline', {
+        state: TIMELINE_ANIMATE,
+        select: null,
+      });
+    }
+
+    this.props.setEditorMeta('timeline', {
+      state: TIMELINE_SELECT_BOX,
+      select: {
+        box: boxName,
+      },
+    });
+  }
+
   addProperty(boxName, propertyName) {
-    console.log('addProperty', boxName, propertyName);
     this.props.setEditorMeta('timeline', {
       animation: this._getAnimation().addProperty(boxName, propertyName)
+    });
+  }
+
+  selectProperty(boxName, propertyName) {
+    console.log('selectProperty', this.props.meta, boxName, propertyName);
+    if (
+      this.props.meta.state === TIMELINE_SELECT_PROPERTY &&
+      this.props.meta.select.box === boxName &&
+      this.props.meta.select.property === propertyName
+    ) {
+      return this.props.setEditorMeta('timeline', {
+        state: TIMELINE_ANIMATE,
+        select: null,
+      });
+    }
+
+    this.props.setEditorMeta('timeline', {
+      state: TIMELINE_SELECT_PROPERTY,
+      select: {
+        box: boxName,
+        property: propertyName,
+      },
     });
   }
 
@@ -661,9 +867,32 @@ class Timeline extends Component {
   }
 
   changeFrame(boxName, propertyName, time, frame) {
-    console.log(650, ...arguments);
     this.props.setEditorMeta('timeline', {
       animation: this._getAnimation().changeFrame(boxName, propertyName, time, frame)
+    });
+  }
+
+  selectFrame(boxName, propertyName, time) {
+    if (
+      this.props.meta.state === TIMELINE_SELECT_KEYFRAME &&
+      this.props.meta.select &&
+      this.props.meta.select.box === boxName &&
+      this.props.meta.select.property === propertyName &&
+      this.props.meta.select.time === time
+    ) {
+      return this.props.setEditorMeta('timeline', {
+        state: TIMELINE_ANIMATE,
+        select: null,
+      });
+    }
+
+    this.props.setEditorMeta('timeline', {
+      state: TIMELINE_SELECT_KEYFRAME,
+      select: {
+        box: boxName,
+        property: propertyName,
+        time,
+      },
     });
   }
 
@@ -673,8 +902,95 @@ class Timeline extends Component {
     });
   }
 
+  getSelect() {
+    const {select, animation} = this.props.meta;
+    if (typeof select.box !== 'undefined') {
+      if (select.property) {
+        if (typeof select.time !== 'undefined') {
+          return animation._findBox(select.box)._findProperty(select.property)._findFrame(select.time);
+        }
+        return animation._findBox(select.box)._findProperty(select.property);
+      }
+      return animation._findBox(select.box);
+    }
+    return animation;
+  }
+
+  setSelect(value) {
+    const {select, animation} = this.props.meta;
+    if (typeof select.box !== 'undefined') {
+      if (select.property) {
+        if (typeof select.time !== 'undefined') {
+          return this.props.setEditorMeta('timeline', {
+            animation: animation._changeBoxes(
+              select.box,
+              animation._findBox(select.box)._changeProperties(
+                select.property,
+                animation._findBox(select.box)._findProperty(select.property)._changeKeyframes(
+                  select.time,
+                  Keyframe.fromJson({}, value, {time: select.time})
+                )
+              )
+            ),
+          });
+        }
+        return this.props.setEditorMeta('timeline', {
+          animation: animation._changeBoxes(
+            select.box,
+            animation._findBox(select.box)._changeProperties(
+              select.property,
+              Property.fromJson(Object.assign({}, value, {name: select.property}))
+            )
+          ),
+        });
+      }
+      return this.props.setEditorMeta('timeline', {
+        animation: animation._changeBoxes(select.box, Box.fromJson(Object.assign({}, value, {name: select.box}))),
+      });
+    }
+    return this.props.setEditorMeta('timeline', {
+      animation: Animation.fromJson(value),
+    });
+  }
+
+  resetSelect() {
+    const {select, animation} = this.props.meta;
+    if (typeof select.box !== 'undefined') {
+      if (select.property) {
+        if (typeof select.time !== 'undefined') {
+          return this.props.setEditorMeta('timeline', {
+            animation: animation._changeBoxes(
+              select.box,
+              animation._findBox(select.box)._changeProperties(
+                select.property,
+                animation._findBox(select.box)._findProperty(select.property)._changeKeyframes(
+                  select.time,
+                  null
+                )
+              )
+            ),
+          });
+        }
+        return this.props.setEditorMeta('timeline', {
+          animation: animation._changeBoxes(
+            select.box,
+            animation._findBox(select.box)._changeProperties(
+              select.property,
+              null
+            )
+          ),
+        });
+      }
+      return this.props.setEditorMeta('timeline', {
+        animation: animation._changeBoxes(select.box, null),
+      });
+    }
+    return this.props.setEditorMeta('timeline', {
+      animation: new Animation(),
+    });
+  }
+
   render({rect, meta, setEditorMeta}) {
-    console.log(this.props, this.state);
     const walk = function*(rects) {
       for (const rect of rects) {
         if (rect.name) {
@@ -701,19 +1017,23 @@ class Timeline extends Component {
     };
 
     const {animation = {boxes: []}} = meta || {};
-    console.log(animation);
 
     return (
       <div style={{position: 'relative', height: '100%', overflow: 'scroll'}}>
         <div style={{position: 'absolute', top: 0, left: 0, right: '80%', overflowY: 'scroll', overflowX: 'hidden'}}>
           <KeyframeHeader meta={meta}
+            selected={meta.state && meta.state.indexOf('_SELECT_') >= 0 ? meta.select : null}
             toggleOptions={this.toggleOptions}
+            selectAnimation={this.selectAnimation}
             changeDuration={this.setDuration} />
           {named.map(named => (
             <BoxHeader
               rect={named}
+              selected={meta.state && meta.state.indexOf('_SELECT_') >= 0 ? meta.select : null}
               animated={animation.boxes.find(box => box.name === named.name)}
+              selectBox={this.selectBox}
               addProperty={this.addProperty}
+              selectProperty={this.selectProperty}
               removeProperty={this.removeProperty} />
           ))}
         </div>
@@ -724,10 +1044,12 @@ class Timeline extends Component {
           {named.map(named => (
             <BoxBody
               cursor={meta.state === TIMELINE_ANIMATE_KEY ? meta.cursor : -1}
+              selected={meta.state && meta.state.indexOf('_SELECT_') >= 0 ? meta.select : null}
               rect={named}
               animated={animation.boxes.find(box => box.name === named.name)}
               addFrame={this.addFrame}
               changeFrame={this.changeFrame}
+              selectFrame={this.selectFrame}
               removeFrame={this.removeFrame}
               setCursor={this.setCursor} />
           ))}
