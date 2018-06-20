@@ -95,7 +95,6 @@ class KeyframeItem extends Component {
     console.log('Keyframe.render', selected);
     return (
       <div
-        onClick={this.selectFrame}
         onDblClick={this.onDoubleClick}
         style={{position: 'absolute', background: 'black'}}>
         &nbsp;
@@ -144,11 +143,16 @@ class ValueBody extends Component {
   }
 
   onDoubleClick(event) {
+    if (this._pendingCursor === null) {
+      return;
+    }
+
     const height = event.target.clientHeight - 2;
     const x = event.offsetX / height | 0;
 
     this.addFrame(x);
     this.props.setCursor(x);
+    this._pendingCursor = null;
 
     event.preventDefault();
     event.stopPropagation();
@@ -179,7 +183,16 @@ class ValueBody extends Component {
 
     const x = this.getTime(event);
 
-    this.props.setCursor(x);
+    const wasFrame = this.props.value.keyframes.find(frame => frame.time === x);
+    const _pendingCursor = this._pendingCursor = new Promise(resolve => setTimeout(resolve, 300))
+    .then(() => {
+      const isFrame = this.props.value.keyframes.find(frame => frame.time === x);
+      if (this._pendingCursor === _pendingCursor && wasFrame === isFrame) {
+        this.props.setCursor(x);
+        this.selectFrame(x);
+        this._pendingCursor = null;
+      }
+    });
 
     event.preventDefault();
     event.stopPropagation();
