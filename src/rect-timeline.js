@@ -707,6 +707,8 @@ class Timeline extends Component {
   }
 
   async componentDidUpdate() {
+    localStorage.lastAnimation = JSON.stringify(this.props.meta.animation);
+
     if (this.props.meta.state === TIMELINE_ANIMATE_KEY) {
       await Promise.resolve();
       if (this.animation) {

@@ -1,5 +1,6 @@
 import {h, Component} from 'preact';
 
+import Animation from './animation';
 import Rect from './rect';
 import RectRender from './rect-render';
 import RectValues from './rect-values';
@@ -16,7 +17,9 @@ class RectEditor extends Component {
       pasteMode: 'paste',
       rect: Rect.fromJson(JSON.parse(localStorage.lastRect || JSON.stringify(new Rect()))),
       path: [],
-      meta: {},
+      meta: {
+        animation: Animation.fromJson(JSON.parse(localStorage.lastAnimation || JSON.stringify(new Animation()))),
+      },
     };
 
     this.updateChild = this.updateChild.bind(this);
@@ -111,6 +114,11 @@ class RectEditor extends Component {
         redo: Object.assign({}, this.state),
         path: this.state.path,
         pasteMode: this.state.pasteMode,
+        meta: Object.assign({}, this.state.undo.meta, {
+          state: this.state.undo.state,
+          cursor: this.state.undo.cursor,
+          select: this.state.undo.select,
+        }),
       }));
     }
   }
@@ -120,6 +128,11 @@ class RectEditor extends Component {
       this.setState(Object.assign({}, this.state.redo, {
         path: this.state.path,
         pasteMode: this.state.pasteMode,
+        meta: Object.assign({}, this.state.undo.meta, {
+          state: this.state.undo.state,
+          cursor: this.state.undo.cursor,
+          select: this.state.undo.select,
+        }),
       }));
     }
   }
@@ -192,6 +205,11 @@ class RectEditor extends Component {
   }
 
   setEditorMeta(metaName, metaState) {
+    if (metaState.animation) {
+      this.doState('timeline', {
+        meta: Object.assign({}, this.state.meta, metaState),
+      });
+    }
     this.setState({
       meta: Object.assign({}, this.state.meta, metaState),
     });
