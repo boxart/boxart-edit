@@ -32,6 +32,9 @@ class RectEditor extends Component {
       if (event.target.tagName.toLowerCase() === 'input') {
         return;
       }
+      if (this.state.meta && this.state.meta.select) {
+        return;
+      }
       event.clipboardData.setData('text/plain', JSON.stringify(this.getRect(this.state.path)));
       if (this.state.path.length > 0) {
         this.removeSelect();
@@ -45,11 +48,17 @@ class RectEditor extends Component {
       if (event.target.tagName.toLowerCase() === 'input') {
         return;
       }
+      if (this.state.meta && this.state.meta.select) {
+        return;
+      }
       event.clipboardData.setData('text/plain', JSON.stringify(this.getRect(this.state.path)));
       event.preventDefault();
     });
     document.addEventListener('paste', event => {
       if (event.target.tagName.toLowerCase() === 'input') {
+        return;
+      }
+      if (this.state.meta && this.state.meta.select) {
         return;
       }
       if (this.state.pasteMode === 'paste') {
