@@ -27,6 +27,10 @@ class Keyframe {
   assign(frame) {
     return new Keyframe(Object.assign({}, this, frame));
   }
+
+  static fromJson(_keyframe) {
+    return new Keyframe(_keyframe);
+  }
 }
 
 class Property {
@@ -60,6 +64,10 @@ class Property {
 
   removeFrame(time, frame) {
     return this._changeKeyframes(time, null);
+  }
+
+  static fromJson({name, keyframes}) {
+    return new Property({name, keyframes: keyframes.map(Keyframe.fromJson)});
   }
 }
 
@@ -102,6 +110,10 @@ class Box {
 
   removeFrame(propertyName, time) {
     return this._changeProperties(propertyName, this._findProperty(propertyName).removeFrame(time));
+  }
+
+  static fromJson({name, properties}) {
+    return new Box({name, properties: properties.map(Property.fromJson)});
   }
 }
 
@@ -167,11 +179,19 @@ class Animation {
   removeFrame(boxName, propertyName, time) {
     return this._changeBoxes(boxName, this._findBox(boxName).removeFrame(propertyName, time));
   }
+
+  static fromJson({boxes, duration}) {
+    return new Animation({boxes: boxes.map(Box.fromJson), duration});
+  }
 }
 
 export default Animation;
 
 export {
+  Animation,
+  Box,
+  Property,
+  Keyframe,
   EASING,
   FORMAT,
 };
